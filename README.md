@@ -5,4 +5,4 @@
  其中小分辨率（192x144）即为用来预览的视频。
   * 2）json.sh用来根据目录下的文件名，生成文件列表的json数据，其中SERVER要跟你得nginx的IP跟监听端口一致。
   * 3）使用json.sh生成list.data后，放到你的dist目录下即可。
-![image](https://github.com/zhengwenming/WMPlayer/blob/master/WMPlayer/Resource/WMPlayer.gif) 
+![image](https://github.com/yechaoqun/yousee/blob/master/image.gif) 

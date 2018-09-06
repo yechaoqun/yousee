@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>flv.js demo</title>
+<style>
+
+ul {
+	list-style-type:none;
+}
+
+li {
+	list-style-type:none;
+	float: left;
+	margin:0 20px;
+}
+
+.player{z-index:100}
+.img{z-index:1}
+
+.mainContainer {
+    display: block;
+    width: 1024px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.urlInput {
+    display: block;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.centeredVideo {
+    display: block;
+    width: 100%;
+    height: 576px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: auto;
+}
+
+.controls {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin-left: auto;
+    margin-right: auto;
+}
+</style>
+</head>
+
+<body>
+		<script src="jquery-3.1.1.min.js"></script>
+		<script src="flv.js"></script>
+		<div id="container">
+    	<ul id="video-player-list"></>
+      <!--  <video id="video1" autuoplay poster="http://192.168.200.100:9980/1_144p.jpg" fileurl="http://192.168.200.100:9980/1_144p.flv" onmouseover="video_onmouseover(this)" onmouseout ="video_onmouseout(this)" width="192" height="144">Your browser is too old which doesn't support HTML5 video.</video>
+        <video id="video2" controls width="192" height="144">Your browser is too old which doesn't support HTML5 video.</video>
+        <video id="video3" controls width="192" height="144">Your browser is too old which doesn't support HTML5 video.</video>
+        <video id="video4" controls width="192" height="144">Your browser is too old which doesn't support HTML5 video.</video>
+       -->
+    </div>
+    
+    <script>
+    		function check_mouse_time() {
+    			if(typeof(this.player) == "undefined" || this.player == null) {
+    				if(flvjs.isSupported()) {
+	    				var fileurl = this.fileurl;
+	    				this.player = flvjs.createPlayer({
+	                type: 'flv',
+	                url: fileurl,     
+	            });
+	            
+	            this.player.attachMediaElement(this);
+	            this.player.load(); //╪сть
+	          }
+    			}
+    			else if(this.player != null) {
+    				this.player.pause();
+            this.player.unload();
+            this.player.detachMediaElement();
+            this.player.destroy();
+            this.player = null;
+            
+            var fileurl = this.fileurl;
+    				this.player = flvjs.createPlayer({
+                type: 'flv',
+                url: fileurl,     
+            });
+            
+            this.player.attachMediaElement(this);
+            this.player.load(); //╪сть
+    			}
+    		}
+    		function video_onmouseover() {
+    			console.log(this.className);
+    			this.timer = setTimeout(check_mouse_time.bind(this), 500);
+    		} 
+    		
+    		function video_onmouseout() {
+    			console.log("step2");
+    			clearTimeout(this.timer);
+    			if(typeof this.player != "undefined" && this.player != null) {
+    					this.player.pause();
+	            this.player.unload();
+	            this.player.detachMediaElement();
+	            this.player.destroy();
+	            this.player = null;
+    			}
+  
+    		}
+    </script>
+    
+    <script>
+    		function creatH5VideoLabel(parent, media) {
+    				var video = document.createElement("video");
+    				video.width = 192;
+    				video.height = 144;
+    				video.id = parent.id+"h5 player";
+    				video.autoplay = true;
+    				
+    				
+    				video.fileurl = media.videofileurl;
+    				
+    				video.style.position = "absolute";
+    				if(media.id <= 4) {
+	    				video.style.top  = "60px";
+	    				video.style.left = 20 + (media.id-1)*240 + "px";
+	    			}
+	    			else {
+	    				video.style.top  = "240px";
+	    				video.style.left = 20 + (media.id-5)*240 + "px";
+	    			}
+	    			
+	    			video.onmouseover = video_onmouseover.bind(video);
+	    			video.onmouseout  = video_onmouseout.bind(video);
+    				
+    				parent.appendChild(video);
+    		}
+    		
+    		function creatVideoHref(parent, media) {
+    			var a = document.createElement("a");
+    			a.href = "/"+parent.id;
+    			creatVideoCover(a, media);
+    			parent.appendChild(a);
+    		}
+    		
+    		function creatVideoImage(parent, media) {
+    			var img = document.createElement("img");
+    			img.className = "video image";
+    			img.src=media.imagefileurl;
+    			img.style.position="absolute";
+    			if(media.id <= 4) {
+    				img.style.top  = "60px";
+    				img.style.left = 20 + (media.id-1)*240 + "px";
+    			}
+    			else {
+    				img.style.top  = "240px";
+    				img.style.left = 20 + (media.id-5)*240 + "px";
+    			}
+    			img.parent=parent;
+    			parent.image=img;
+    			parent.appendChild(img);
+    		}
+    		function creatVideoOverLayer(parent, media) {
+    			var div = document.createElement("div");
+    			div.className = "video over layer";
+    			parent.appendChild(div);
+    		}
+    		function creatVideoPlayer(parent, media) {
+    			var div = document.createElement("div");
+    			div.className="video player";
+    			div.parent=parent;
+    			parent.videoplayer=div;
+    			creatH5VideoLabel(div, media);
+    			parent.appendChild(div);
+    		}
+    		function creatVideoCover(parent, media) {
+    			var div = document.createElement("div");
+    			div.className = "video cover";
+    			creatVideoImage(div,media);
+    			creatVideoOverLayer(div, media);
+    			creatVideoPlayer(div, media);
+    			parent.appendChild(div);
+    		}
+    		function creatLiLabel(parent, media) {
+    			var li = document.createElement("li");
+    			li.id = "li"+media.id;
+    			creatVideoHref(li, media);
+    			
+    			parent.appendChild(li);
+    			
+    			
+    		}
+    </script>
+    
+    <script>
+     		var filelist;
+     		var jq = $.noConflict();
+    		jq.ajax({
+    			url:'list.data',
+    			async:false,
+    			cache:false,
+    			success:function(data,status,jqXHR) {
+    				filelist = JSON.parse(data);
+    			}
+    		});
+    		
+    		var ul = document.getElementById("video-player-list");
+    		var media = new Object();
+    		for(var i=0; i<filelist.list.length; i++) {
+    			if(filelist.list[i].videourl.length > 0) {
+	    			media.id=filelist.list[i].id;
+	    			media.imagefileurl=filelist.list[i].imageurl;
+	    			media.videofileurl=filelist.list[i].videourl;
+	    			creatLiLabel(ul, media);
+	    		}
+    		}
+    		
+    		
+    		
+    	</script>	
+    	
+    
+    
+    <br>
+</body>
+
+</html>

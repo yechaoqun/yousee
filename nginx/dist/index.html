@@ -145,7 +145,7 @@ li {
     		
     		function creatVideoHref(parent, media) {
     			var a = document.createElement("a");
-    			a.href = "/"+parent.id;
+    			a.href = "/room?fileno="+parent.id;
     			creatVideoCover(a, media);
     			parent.appendChild(a);
     		}
@@ -190,7 +190,7 @@ li {
     		}
     		function creatLiLabel(parent, media) {
     			var li = document.createElement("li");
-    			li.id = "li"+media.id;
+    			li.id = media.id;
     			creatVideoHref(li, media);
     			
     			parent.appendChild(li);

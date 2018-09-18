@@ -20,35 +20,17 @@
 
 
 #include "cJSON.h"
+#include "mempipe.h"
 
 enum {
 	TCP_NO_USED = 0,
 	TCP_WAIT_REQUEST,
+	TCP_WAIT_HTML_REQUEST,
 	TCP_SEND_RESPONSE,
 	TCP_WAIT_DATA,
 	TCP_SEND_DATA
 };
 
-#define MEMPIPE_TAG		(0x50495045)
-
-enum {
-	MEMPIPE_GET = 0
-};
-
-typedef struct {
-	unsigned int tag;
-	unsigned int code;
-	unsigned int fileno;
-	unsigned int start;
-	unsigned int size;
-}mempipe_request_hdr;
-
-typedef struct {
-	unsigned int tag;
-	unsigned int status;
-	unsigned int start;
-	unsigned int length;	
-}mempipe_response_hdr;
 
 
 static char g_filelist[100][128];
@@ -63,6 +45,7 @@ typedef struct stmempipe_connection
     struct pollfd *poll_entry;
 
 	char *buffer, *buffer_ptr, *buffer_end;
+	int buffer_size;
 
 	int rsize;
 	int eof;
@@ -178,7 +161,8 @@ static void new_connection(int serverfd, mempipe_connection *table, int max_con)
 	con->fd = fd;
 	con->state = TCP_WAIT_REQUEST;
 
-	con->buffer = malloc(1024*1024);
+	con->buffer_size = 1024*1024;
+	con->buffer = malloc(con->buffer_size);
 	con->buffer_ptr = con->buffer_end = con->buffer;
 
 
@@ -269,7 +253,7 @@ static int creat_html(mempipe_connection *c, int id)
 static int handle_connection(mempipe_connection *c)
 {
 	int rlen = 0;
-	mempipe_request_hdr  rqthdr;
+	
 	
 	switch(c->state)
 	{
@@ -280,30 +264,76 @@ static int handle_connection(mempipe_connection *c)
 			if (!(c->poll_entry->revents & POLLIN))
             	return 0;
 
+			mempipe_request_hdr  rqthdr;
 			rlen = recv(c->fd, &rqthdr,  sizeof(rqthdr), 0);
-			if(rlen > 0) {
-				printf("file:%d, start:%d, size:%d\n", rqthdr.fileno, rqthdr.start, rqthdr.size);
-				rlen = creat_html(c, rqthdr.fileno);
-			
-				mempipe_response_hdr *response = (mempipe_response_hdr *)c->buffer;
-				response->tag = MEMPIPE_TAG;
-				response->status = 0;
-				response->start  = 0;
-				response->length = rlen;
+			if(rlen == sizeof(rqthdr)) {
+				if(rqthdr.code == MEMPIPE_GET_HTML) {
+					c->state = TCP_WAIT_HTML_REQUEST;
+				}
+				else {
+					printf("unsupport code(%d)\n", rqthdr.code);
+					return -1;
+				}
+			}
+			else if(rlen == 0) {
+				printf("client close socket\n");
+				return -1;
+			}
+			else {
+				perror("recv failed");
+				return -1;
+			}
+		}
+		break;
+		case TCP_WAIT_HTML_REQUEST:
+		{
+			if(c->poll_entry->revents & (POLLERR | POLLHUP))
+				return -1;
+			if (!(c->poll_entry->revents & POLLIN))
+            	return 0;
 
-				c->buffer_ptr = c->buffer + sizeof(mempipe_response_hdr);
-				memcpy(c->buffer_ptr, c->html, rlen);
-				c->buffer_ptr = c->buffer;
-				c->buffer_end = c->buffer + sizeof(mempipe_response_hdr) + rlen;
-				
-				c->state = TCP_SEND_RESPONSE;
+			mempipe_html_request html_request;
+			rlen = recv(c->fd, &html_request,  sizeof(html_request), 0);
+			if(rlen == sizeof(html_request)) {
+				if(html_request.str_len > 0) {
+					char tmpbuf[256];
+					rlen = recv(c->fd, tmpbuf, sizeof(tmpbuf), 0);
+					url_list *html = findhtml(tmpbuf, html_request.str_len);
+					if(!html) {
+						printf("not found the %d, %d ", html_request.code, html_request.str_len);
+						for(int j=0; j<html_request.str_len; j++)
+							printf("%02x ", html_request.str[j]);
+						printf("\n");
+						return -1;
+					}
+					c->buffer_ptr = c->buffer+sizeof(mempipe_response_hdr)+sizeof(mempipe_html_response); 
+					c->buffer_end = c->buffer+c->buffer_size-1;
+					rlen = html->handle(c->buffer_ptr, c->buffer_end-c->buffer_ptr, html->arg);
+
+					mempipe_response_hdr *response = (mempipe_response_hdr *)c->buffer;
+					response->tag  = MEMPIPE_TAG;
+					response->code = MEMPIPE_GET_HTML;
+
+					mempipe_html_response *html_response = (mempipe_html_response *)response->response;
+					html_response->code = MEMPIPE_GET_HTML;
+					html_response->status = 0;
+					html_response->length = rlen;
+
+					c->buffer_end = c->buffer_ptr+rlen;
+					c->buffer_ptr = c->buffer;
+					c->state = TCP_SEND_RESPONSE;
+					
+				}
+				else
+					return -1;
+
 				
 			}
 			else if(rlen == 0) {
 				printf("client close socket\n");
 				return -1;
 			}
-			else if(rlen < 0) {
+			else {
 				perror("recv failed");
 				return -1;
 			}
@@ -427,6 +457,7 @@ S_AGAIN:
 		for(i=0; i<max_con; i++) {
 			switch(con_table[i].state) {
 				case TCP_WAIT_REQUEST:
+				case TCP_WAIT_HTML_REQUEST:
 				{
 					con_table[i].poll_entry = poll_entry;
 					poll_entry->fd = con_table[i].fd;

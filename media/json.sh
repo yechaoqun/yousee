@@ -16,7 +16,11 @@ do
 	#image="miya_144p.jpg"
 	#file="1_hah.flv"
 	id=`expr $id + 1`;
+	count=`expr $id \* 10`;
 	echo -e "{\"id\":\"$id\", \c" >> list.data
+	echo -e "\"title\":\"ÈÈÎè$file\", \c" >> list.data
+	echo -e "\"auth\":\"Ö÷²¥$file\", \c" >> list.data
+	echo -e "\"people\":\"$count.0Íò\", \c" >> list.data
 	echo -e "\"videourl\":\"$SERVER$file\", \c" >> list.data
 	echo -e "\"imageurl\":\"$SERVER$image\", \c" >> list.data
 	echo -e "\"highvideourl\":\"$SERVER$highvideo\" }, \c" >> list.data

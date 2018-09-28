@@ -132,10 +132,23 @@ static ngx_int_t ngx_http_mempipe_create_request(ngx_http_request_t *r)
 		hdr->code = MEMPIPE_GET_HTML;
 		
 		html_request = (mempipe_html_request*)hdr->request;
-		html_request->code = 22222222;
+		html_request->code = 0;
 		html_request->str_len = r->uri.len;
 		ngx_memcpy(html_request->str, r->uri.data, r->uri.len);
 
+		if(r->args.len > 7 && ngx_strncmp(r->args.data, "fileno=", 7) == 0) {
+			int rlen  = r->args.len - 7;
+			u_char *p = r->args.data + 7;
+			int fileid=0;
+			while(rlen > 0 && *p >= '0' && *p <= '9') {
+				fileid = fileid*10 + *p - '0';
+				p++;
+				rlen--;
+			}
+			printf("fileno %d\n", fileid);
+			html_request->code=fileid;
+		}
+		
 		printf("request:%s\n", html_request->str);
 	}
 	else if(r->exten.len == 3 && ngx_strncmp(r->exten.data, "flv", 3) == 0) {

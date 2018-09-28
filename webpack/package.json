@@ -1,0 +1,28 @@
+{
+  "name": "tmp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "dependencies": {
+    "babel-preset-env": "^1.7.0",
+    "css-loader": "^1.0.0",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
+    "style-loader": "^0.23.0",
+    "styled-components": "^3.4.9"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.1.0",
+    "@babel/preset-env": "^7.1.0",
+    "@babel/preset-react": "^7.0.0",
+    "babel-loader": "^8.0.2",
+    "babel-plugin-styled-components": "^1.7.1",
+    "webpack-bundle-analyzer": "^3.0.2",
+    "webpack-manifest-plugin": "^2.0.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

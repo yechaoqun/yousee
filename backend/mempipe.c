@@ -128,6 +128,7 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
     return server_fd;
 }
 
+static char *get_flv_url(int id);
 
 
 
@@ -297,6 +298,7 @@ static int handle_connection(mempipe_connection *c)
 			if(rlen == sizeof(html_request)) {
 				if(html_request.str_len > 0) {
 					char tmpbuf[256];
+					html_args args;
 					rlen = recv(c->fd, tmpbuf, sizeof(tmpbuf), 0);
 					url_list *html = findhtml(tmpbuf, html_request.str_len);
 					if(!html) {
@@ -308,7 +310,10 @@ static int handle_connection(mempipe_connection *c)
 					}
 					c->buffer_ptr = c->buffer+sizeof(mempipe_response_hdr)+sizeof(mempipe_html_response); 
 					c->buffer_end = c->buffer+c->buffer_size-1;
-					rlen = html->handle(c->buffer_ptr, c->buffer_end-c->buffer_ptr, html->arg);
+
+					args.flvurl.data=get_flv_url(html_request.code);
+					args.flvurl.len=strlen(args.flvurl.data);
+					rlen = html->handle(c->buffer_ptr, c->buffer_end-c->buffer_ptr, args, html->arg);
 
 					mempipe_response_hdr *response = (mempipe_response_hdr *)c->buffer;
 					response->tag  = MEMPIPE_TAG;
@@ -503,6 +508,15 @@ S_AGAIN:
 
 #endif
 
+static char *get_flv_url(int id)
+{
+	if(id>0 && id<100) {
+		return &g_filelist[id-1];
+	}
+
+	return "";
+}
+
 int json_init(const char *filename)
 {
 	char buf[4096];
@@ -556,7 +570,7 @@ int json_init(const char *filename)
 
 int main(void)
 {
-	json_init("/mnt/hgfs/VMshare/OpenCode/nginx-1.14.0/html/dist/list.data");
+	json_init("./list.data");
 	mempipe_server();
 	return 0;
 }
